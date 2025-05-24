@@ -1,0 +1,152 @@
+[
+  {
+    "parameters": {},
+    "name": "Start Trigger",
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+      250,
+      300
+    ],
+    "id": "manualTrigger_node_id_final_0"
+  },
+  {
+    "parameters": {
+      "fields": {
+        "values": [
+          {
+            "name": "bookTitle",
+            "label": "Book Title",
+            "type": "string",
+            "default": "",
+            "placeholder": "Enter the title of the book"
+          },
+          {
+            "name": "authorName",
+            "label": "Author Name",
+            "type": "string",
+            "default": "",
+            "placeholder": "Enter the author's name"
+          },
+          {
+            "name": "numChapters",
+            "label": "Number of Chapters",
+            "type": "number",
+            "default": 1,
+            "placeholder": "Enter the total number of chapters"
+          }
+        ]
+      },
+      "options": {}
+    },
+    "name": "Book Details Input",
+    "type": "n8n-nodes-base.userInput",
+    "typeVersion": 1,
+    "position": [
+      450,
+      300
+    ],
+    "id": "bookDetailsInput_node_id_final_1"
+  },
+  {
+    "parameters": {
+      "count": "{{ $('Book Details Input').item.json.numChapters }}"
+    },
+    "name": "Loop Over Chapters",
+    "type": "n8n-nodes-base.loopOverNumbers",
+    "typeVersion": 1,
+    "position": [
+      650,
+      300
+    ],
+    "id": "loopOverChapters_node_id_final_2"
+  },
+  {
+    "parameters": {
+      "fields": {
+        "values": [
+          {
+            "name": "chapterTitle_current",
+            "label": "Chapter {{ $getInput(0).item.json.value }} Title:",
+            "type": "string",
+            "default": "",
+            "placeholder": "Enter the title for this chapter"
+          }
+        ]
+      },
+      "options": {}
+    },
+    "name": "Chapter Title Input",
+    "type": "n8n-nodes-base.userInput",
+    "typeVersion": 1,
+    "position": [
+      850,
+      180
+    ],
+    "id": "chapterTitleInput_node_id_final_3"
+  },
+  {
+    "parameters": {
+      "fields": {
+        "values": [
+          {
+            "name": "chapterContent_current",
+            "label": "Chapter {{ $getInput(0).item.json.value }} Content:",
+            "type": "string",
+            "default": "",
+            "placeholder": "Enter the content for this chapter",
+            "typeOptions": {
+              "rows": 5
+            }
+          }
+        ]
+      },
+      "options": {}
+    },
+    "name": "Chapter Content Input",
+    "type": "n8n-nodes-base.userInput",
+    "typeVersion": 1,
+    "position": [
+      850,
+      420
+    ],
+    "id": "chapterContentInput_node_id_final_4"
+  },
+  {
+    "parameters": {
+      "functionCode": "// Retrieve book details from the 'Book Details Input' node.\\n// Adjust $('Book Details Input') if your node is named differently.\\nconst bookDetailsNode = $('Book Details Input'); \\nconst bookTitle = bookDetailsNode.item.json.bookTitle;\\nconst authorName = bookDetailsNode.item.json.authorName; // Standardized to authorName\\n\\nlet markdownContent = `# ${bookTitle}\\n\\n`; \\nmarkdownContent += `**By: ${authorName}**\\n\\n`;\\nmarkdownContent += `---\\n\\n`;\\n\\n// 'items' is the default variable in an n8n Function node holding an array of input items.\\n// This code assumes the Function node is connected directly after the loop that \\n// collects chapter data.\\n// Each 'item' in the 'items' array is expected to have a 'json' property containing \\n// 'chapterTitle_current' and 'chapterContent_current'.\\nfor (const item of items) {\\n  const chapterTitle = item.json.chapterTitle_current; \\n  const chapterContent = item.json.chapterContent_current;\\n\\n  if (chapterTitle) {\\n    markdownContent += `## ${chapterTitle}\\n\\n`;\\n  }\\n  if (chapterContent) {\\n    markdownContent += `${chapterContent}\\n\\n`;\\n  }\\n  markdownContent += `---\\n\\n`;\\n}\\n\\nconst bookFileName = `${bookTitle}.md`;\\n\\n// The Function node should return an array of items.\\n// Each item in that array should be an object with a 'json' property.\\n// This 'json' property will contain the actual output data of the node.\\nreturn [{ json: { finalMarkdown: markdownContent, bookFileName: bookFileName } }];"
+    },
+    "name": "Assemble Markdown",
+    "type": "n8n-nodes-base.function",
+    "typeVersion": 1,
+    "position": [
+      1150,
+      300
+    ],
+    "id": "assembleMarkdown_node_id_final_5"
+  },
+  {
+    "parameters": {
+      "operation": "upload",
+      "fileContent": "{{ $json.finalMarkdown }}",
+      "fileName": "{{ $json.bookFileName }}",
+      "mimeType": "text/markdown",
+      "parent": "", 
+      "options": {}
+    },
+    "name": "Upload to Google Drive",
+    "type": "n8n-nodes-base.googleDrive", 
+    "typeVersion": 1,
+    "position": [
+      1350,
+      300
+    ],
+    "credentials": {
+      "googleApi": {
+        "id": "YOUR_GOOGLE_API_CREDENTIAL_ID_PLACEHOLDER",
+        "name": "Your Google API Credential Name Placeholder"
+      }
+    },
+    "id": "googleDriveUpload_node_id_final_6"
+  }
+]

@@ -10,7 +10,7 @@
         250,
         300
       ],
-      "id": "0f9c9f23-ab03-4a67-a293-bb7c47c671f5"
+      "id": "manualTrigger_node"
     },
     {
       "parameters": {
@@ -24,11 +24,11 @@
               "placeholder": "Enter the title of the book"
             },
             {
-              "name": "bookAuthor",
-              "label": "Book Author",
+              "name": "authorName",
+              "label": "Author Name",
               "type": "string",
               "default": "",
-              "placeholder": "Enter the author of the book"
+              "placeholder": "Enter the author's name"
             },
             {
               "name": "numChapters",
@@ -48,11 +48,11 @@
         450,
         300
       ],
-      "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      "id": "bookDetailsInput_node"
     },
     {
       "parameters": {
-        "count": "{{ $json.numChapters }}"
+        "count": "{{ $('Book Details Input').item.json.numChapters }}"
       },
       "name": "Loop Over Chapters",
       "type": "n8n-nodes-base.loopOverNumbers",
@@ -61,7 +61,7 @@
         650,
         300
       ],
-      "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1"
+      "id": "loopOverChapters_node"
     },
     {
       "parameters": {
@@ -69,7 +69,7 @@
           "values": [
             {
               "name": "chapterTitle_current",
-              "label": "Chapter Title (Chapter {{ $getInput(1).item.json.value }})",
+              "label": "Chapter {{ $getInput(0).item.json.value }} Title:",
               "type": "string",
               "default": "",
               "placeholder": "Enter the title for this chapter"
@@ -83,9 +83,9 @@
       "typeVersion": 1,
       "position": [
         850,
-        180  // Adjusted position for clarity
+        180
       ],
-      "id": "c3d4e5f6-a7b8-9012-3456-7890abcdef12"
+      "id": "chapterTitleInput_node"
     },
     {
       "parameters": {
@@ -93,7 +93,7 @@
           "values": [
             {
               "name": "chapterContent_current",
-              "label": "Chapter Content (Chapter {{ $getInput(1).item.json.value }})",
+              "label": "Chapter {{ $getInput(0).item.json.value }} Content:",
               "type": "string",
               "default": "",
               "placeholder": "Enter the content for this chapter",
@@ -110,13 +110,13 @@
       "typeVersion": 1,
       "position": [
         850,
-        420 // Adjusted position for clarity
+        420
       ],
-      "id": "d4e5f6a7-b8c9-0123-4567-890abcdef123"
+      "id": "chapterContentInput_node"
     },
     {
       "parameters": {
-        "functionCode": "// Retrieve book details.\nconst bookDetailsNode = $('Book Details Input');\nconst bookTitle = bookDetailsNode.item.json.bookTitle;\nconst bookAuthor = bookDetailsNode.item.json.bookAuthor;\n\nlet markdownContent = `# ${bookTitle}\\n\\n`;\nmarkdownContent += `**By: ${bookAuthor}**\\n\\n`;\nmarkdownContent += `---\\n\\n`;\n\nfor (const item of items) {\n  const chapterTitle = item.json.chapterTitle_current;\n  const chapterContent = item.json.chapterContent_current;\n\n  if (chapterTitle) {\n    markdownContent += `## ${chapterTitle}\\n\\n`;\n  }\n  if (chapterContent) {\n    markdownContent += `${chapterContent}\\n\\n`;\n  }\n  markdownContent += `---\\n\\n`;\n}\n\nreturn [{ json: { finalMarkdown: markdownContent, bookFileName: `${bookTitle}.md` } }];"
+        "functionCode": "// Retrieve book details from the 'Book Details Input' node.\n// Adjust $('Book Details Input') if your node is named differently.\nconst bookDetailsNode = $('Book Details Input'); \nconst bookTitle = bookDetailsNode.item.json.bookTitle;\nconst authorName = bookDetailsNode.item.json.authorName; // Standardized to authorName\n\nlet markdownContent = `# ${bookTitle}\\n\\n`; \nmarkdownContent += `**By: ${authorName}**\\n\\n`;\nmarkdownContent += `---\\n\\n`;\n\n// 'items' is the default variable in an n8n Function node holding an array of input items.\n// This code assumes the Function node is connected directly after the loop that \n// collects chapter data.\n// Each 'item' in the 'items' array is expected to have a 'json' property containing \n// 'chapterTitle_current' and 'chapterContent_current'.\nfor (const item of items) {\n  const chapterTitle = item.json.chapterTitle_current; \n  const chapterContent = item.json.chapterContent_current;\n\n  if (chapterTitle) {\n    markdownContent += `## ${chapterTitle}\\n\\n`;\n  }\n  if (chapterContent) {\n    markdownContent += `${chapterContent}\\n\\n`;\n  }\n  markdownContent += `---\\n\\n`;\n}\n\nconst bookFileName = `${bookTitle}.md`;\n\n// The Function node should return an array of items.\n// Each item in that array should be an object with a 'json' property.\n// This 'json' property will contain the actual output data of the node.\nreturn [{ json: { finalMarkdown: markdownContent, bookFileName: bookFileName } }];"
       },
       "name": "Assemble Markdown",
       "type": "n8n-nodes-base.function",
@@ -125,7 +125,7 @@
         1150,
         300
       ],
-      "id": "e5f6a7b8-c9d0-1234-5678-90abcdef1234"
+      "id": "assembleMarkdown_node"
     },
     {
       "parameters": {
@@ -133,7 +133,7 @@
         "binaryData": true,
         "fileContent": "{{ $json.finalMarkdown }}",
         "fileName": "{{ $json.bookFileName }}",
-        "parent": "", // Placeholder for Parent Folder ID
+        "parent": "", 
         "mimeType": "text/markdown",
         "options": {}
       },
@@ -144,71 +144,71 @@
         1350,
         300
       ],
-      "credentials": { // Placeholder for credentials
+      "credentials": {
         "googleApi": {
-          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID", // This would be replaced with actual ID
-          "name": "Your Google Drive Credential Name"
+          "id": "YOUR_GOOGLE_API_CREDENTIAL_ID", 
+          "name": "Your Google API Credential Name"
         }
       },
-      "id": "f6a7b8c9-d0e1-2345-6789-0abcdef12345"
+      "id": "googleDriveUpload_node"
     }
   ],
   "connections": {
-    "Manual Trigger": {
+    "manualTrigger_node": {
       "main": [
         [
           {
-            "node": "Book Details Input",
+            "node": "bookDetailsInput_node",
             "type": "main"
           }
         ]
       ]
     },
-    "Book Details Input": {
+    "bookDetailsInput_node": {
       "main": [
         [
           {
-            "node": "Loop Over Chapters",
+            "node": "loopOverChapters_node",
             "type": "main"
           }
         ]
       ]
     },
-    "Loop Over Chapters": {
+    "loopOverChapters_node": {
       "main": [
         [
           {
-            "node": "Chapter Title Input",
+            "node": "chapterTitleInput_node",
             "type": "main"
           }
         ]
       ]
     },
-    "Chapter Title Input": {
+    "chapterTitleInput_node": {
       "main": [
         [
           {
-            "node": "Chapter Content Input",
+            "node": "chapterContentInput_node",
             "type": "main"
           }
         ]
       ]
     },
-    "Chapter Content Input": {
+    "chapterContentInput_node": {
       "main": [
         [
           {
-            "node": "Assemble Markdown",
+            "node": "assembleMarkdown_node",
             "type": "main"
           }
         ]
       ]
     },
-    "Assemble Markdown": {
+    "assembleMarkdown_node": {
       "main": [
         [
           {
-            "node": "Upload to Google Drive",
+            "node": "googleDriveUpload_node",
             "type": "main"
           }
         ]
@@ -217,7 +217,7 @@
   },
   "active": false,
   "settings": {},
-  "id": "123",
+  "id": "workflow_book_creation",
   "meta": {
     "templateCredsSetupCompleted": true
   },
