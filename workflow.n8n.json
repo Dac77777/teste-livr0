@@ -1,0 +1,225 @@
+{
+  "name": "Book to Markdown Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "id": "0f9c9f23-ab03-4a67-a293-bb7c47c671f5"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "bookTitle",
+              "label": "Book Title",
+              "type": "string",
+              "default": "",
+              "placeholder": "Enter the title of the book"
+            },
+            {
+              "name": "bookAuthor",
+              "label": "Book Author",
+              "type": "string",
+              "default": "",
+              "placeholder": "Enter the author of the book"
+            },
+            {
+              "name": "numChapters",
+              "label": "Number of Chapters",
+              "type": "number",
+              "default": 1,
+              "placeholder": "Enter the total number of chapters"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Book Details Input",
+      "type": "n8n-nodes-base.userInput",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+    },
+    {
+      "parameters": {
+        "count": "{{ $json.numChapters }}"
+      },
+      "name": "Loop Over Chapters",
+      "type": "n8n-nodes-base.loopOverNumbers",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "chapterTitle_current",
+              "label": "Chapter Title (Chapter {{ $getInput(1).item.json.value }})",
+              "type": "string",
+              "default": "",
+              "placeholder": "Enter the title for this chapter"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Chapter Title Input",
+      "type": "n8n-nodes-base.userInput",
+      "typeVersion": 1,
+      "position": [
+        850,
+        180  // Adjusted position for clarity
+      ],
+      "id": "c3d4e5f6-a7b8-9012-3456-7890abcdef12"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "chapterContent_current",
+              "label": "Chapter Content (Chapter {{ $getInput(1).item.json.value }})",
+              "type": "string",
+              "default": "",
+              "placeholder": "Enter the content for this chapter",
+              "typeOptions": {
+                "rows": 5
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Chapter Content Input",
+      "type": "n8n-nodes-base.userInput",
+      "typeVersion": 1,
+      "position": [
+        850,
+        420 // Adjusted position for clarity
+      ],
+      "id": "d4e5f6a7-b8c9-0123-4567-890abcdef123"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Retrieve book details.\nconst bookDetailsNode = $('Book Details Input');\nconst bookTitle = bookDetailsNode.item.json.bookTitle;\nconst bookAuthor = bookDetailsNode.item.json.bookAuthor;\n\nlet markdownContent = `# ${bookTitle}\\n\\n`;\nmarkdownContent += `**By: ${bookAuthor}**\\n\\n`;\nmarkdownContent += `---\\n\\n`;\n\nfor (const item of items) {\n  const chapterTitle = item.json.chapterTitle_current;\n  const chapterContent = item.json.chapterContent_current;\n\n  if (chapterTitle) {\n    markdownContent += `## ${chapterTitle}\\n\\n`;\n  }\n  if (chapterContent) {\n    markdownContent += `${chapterContent}\\n\\n`;\n  }\n  markdownContent += `---\\n\\n`;\n}\n\nreturn [{ json: { finalMarkdown: markdownContent, bookFileName: `${bookTitle}.md` } }];"
+      },
+      "name": "Assemble Markdown",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        300
+      ],
+      "id": "e5f6a7b8-c9d0-1234-5678-90abcdef1234"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "binaryData": true,
+        "fileContent": "{{ $json.finalMarkdown }}",
+        "fileName": "{{ $json.bookFileName }}",
+        "parent": "", // Placeholder for Parent Folder ID
+        "mimeType": "text/markdown",
+        "options": {}
+      },
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-google.drive",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        300
+      ],
+      "credentials": { // Placeholder for credentials
+        "googleApi": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID", // This would be replaced with actual ID
+          "name": "Your Google Drive Credential Name"
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-6789-0abcdef12345"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Book Details Input",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Book Details Input": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Chapters",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Loop Over Chapters": {
+      "main": [
+        [
+          {
+            "node": "Chapter Title Input",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Chapter Title Input": {
+      "main": [
+        [
+          {
+            "node": "Chapter Content Input",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Chapter Content Input": {
+      "main": [
+        [
+          {
+            "node": "Assemble Markdown",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assemble Markdown": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "123",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {}
+}
